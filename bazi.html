@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="fa">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>بازی گلدان‌ها</title>
+    <style>
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            background: linear-gradient(to bottom, #0a0a0a, #1a1a1a);
+            font-family: Arial, sans-serif;
+            color: #fff;
+        }
+        #game-container {
+            display: grid;
+            grid-template-columns: repeat(5, 80px);
+            grid-template-rows: repeat(5, 80px);
+            gap: 10px;
+            background-color: #000;
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: 0 0 20px #00ecff, 0 0 40px #00ecff;
+        }
+        .pot {
+            position: relative;
+            width: 80px;
+            height: 80px;
+            background-color: #111;
+            border: 2px solid #00ecff;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: 0 0 10px #00ecff;
+        }
+        .flower {
+            position: absolute;
+            bottom: 0;
+            width: 50px;
+            height: 50px;
+            background: radial-gradient(circle, #fd00ff, #7cff00);
+            clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);
+            transform: translateY(100%);
+            transition: transform 0.1s ease-in-out;
+            box-shadow: 0 0 15px #fd00ff, 0 0 30px #7cff00;
+        }
+        .flower.visible {
+            transform: translateY(0);
+        }
+        #score {
+            font-size: 24px;
+            margin: 20px 0;
+            color: #e3ff00;
+            text-shadow: 0 0 10px #e3ff00;
+        }
+        #timer {
+            font-size: 20px;
+            margin-bottom: 10px;
+            color: #ffb400;
+            text-shadow: 0 0 10px #ffb400;
+        }
+        #level {
+            font-size: 20px;
+            margin-bottom: 10px;
+            color: #fd00ff;
+            text-shadow: 0 0 10px #fd00ff;
+        }
+        #start-btn {
+            padding: 10px 20px;
+            font-size: 18px;
+            background-color: #00ecff;
+            border: none;
+            color: #000;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-bottom: 20px;
+            box-shadow: 0 0 10px #00ecff;
+        }
+        #start-btn:hover {
+            background-color: #7cff00;
+            box-shadow: 0 0 20px #7cff00;
+        }
+        h1 {
+            text-shadow: 0 0 10px #fd00ff;
+        }
+    </style>
+</head>
+<body>
+    <h1>بازی گلدان‌ها</h1>
+    <button id="start-btn">شروع بازی</button>
+    <div id="score">امتیاز: 0</div>
+    <div id="level">مرحله: 1</div>
+    <div id="timer">زمان باقی‌مانده: 15 ثانیه</div>
+    <div id="game-container"></div>
+
+    <script>
+        const gridSize = 5;
+        const totalPots = gridSize * gridSize;
+        const gameDuration = 15; // ثانیه
+        const minScoreToContinue = 5; // حداقل امتیاز برای ادامه
+        let score = 0;
+        let timeLeft = gameDuration;
+        let flowerDuration = 1000; // 1 ثانیه اولیه
+        let gameInterval;
+        let timerInterval;
+        let level = 1;
+        let flowersPerLevel = 1; // تعداد گل‌ها در هر سطح
+
+        const gameContainer = document.getElementById('game-container');
+        const scoreElement = document.getElementById('score');
+        const timerElement = document.getElementById('timer');
+        const levelElement = document.getElementById('level');
+        const startBtn = document.getElementById('start-btn');
+
+        // ایجاد گلدان‌ها
+        function createPots() {
+            gameContainer.innerHTML = '';
+            for (let i = 0; i < totalPots; i++) {
+                const pot = document.createElement('div');
+                pot.classList.add('pot');
+                const flower = document.createElement('div');
+                flower.classList.add('flower');
+                pot.appendChild(flower);
+                pot.addEventListener('click', handleClick);
+                gameContainer.appendChild(pot);
+            }
+        }
+
+        // مدیریت کلیک
+        function handleClick(event) {
+            const flower = event.currentTarget.querySelector('.flower');
+            if (flower.classList.contains('visible')) {
+                score++;
+                scoreElement.textContent = `امتیاز: ${score}`;
+                flower.classList.remove('visible');
+            }
+        }
+
+        // نمایش تصادفی گل
+        function showFlower() {
+            const pots = Array.from(document.querySelectorAll('.pot'));
+            const shownFlowers = [];
+
+            for (let i = 0; i < flowersPerLevel; i++) {
+                const randomIndex = Math.floor(Math.random() * pots.length);
+                const pot = pots[randomIndex];
+                const flower = pot.querySelector('.flower');
+                if (!flower.classList.contains('visible')) {
+                    flower.classList.add('visible');
+                    shownFlowers.push(flower);
+                }
+            }
+
+            setTimeout(() => {
+                shownFlowers.forEach(f => f.classList.remove('visible'));
+            }, flowerDuration);
+        }
+
+        // شروع بازی
+        function startGame() {
+            score = 0;
+            timeLeft = gameDuration;
+            flowerDuration = 1000; // شروع از 1 ثانیه
+            flowersPerLevel = 1;
+            level = 1;
+            scoreElement.textContent = `امتیاز: ${score}`;
+            levelElement.textContent = `مرحله: ${level}`;
+            timerElement.textContent = `زمان باقی‌مانده: ${timeLeft} ثانیه`;
+            startBtn.style.display = 'none';
+            createPots();
+            gameInterval = setInterval(showFlower, 1000);
+            timerInterval = setInterval(updateTimer, 1000);
+        }
+
+        // به‌روزرسانی تایمر
+        function updateTimer() {
+            timeLeft--;
+            timerElement.textContent = `زمان باقی‌مانده: ${timeLeft} ثانیه`;
+            if (timeLeft <= 0) {
+                endLevel();
+            }
+        }
+
+        // پایان سطح
+        function endLevel() {
+            clearInterval(gameInterval);
+            clearInterval(timerInterval);
+            if (score >= minScoreToContinue) {
+                alert(`تبریک! مرحله ${level} را گذراندید. امتیاز: ${score}. حالا مرحله ${level + 1}!`);
+                level++;
+                flowerDuration = Math.max(600, flowerDuration - 100); // کاهش 0.1 ثانیه، حداقل 0.6
+                flowersPerLevel = Math.max(1, flowersPerLevel - 0.2); // کاهش تعداد، حداقل 1
+                timeLeft = gameDuration;
+                score = 0;
+                scoreElement.textContent = `امتیاز: ${score}`;
+                levelElement.textContent = `مرحله: ${level}`;
+                timerElement.textContent = `زمان باقی‌مانده: ${timeLeft} ثانیه`;
+                gameInterval = setInterval(showFlower, 1000);
+                timerInterval = setInterval(updateTimer, 1000);
+            } else {
+                alert(`بازی تمام شد! شما در مرحله ${level} باختید. امتیاز نهایی: ${score}`);
+                startBtn.style.display = 'block';
+            }
+        }
+
+        startBtn.addEventListener('click', startGame);
+    </script>
+</body>
+</html>
